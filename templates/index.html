@@ -2,77 +2,180 @@
 <html>
 <head>
     <title>Network Monitor</title>
+
     <meta http-equiv="refresh" content="10">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: Arial;
+            text-align: center;
+        }
+
+        h1 {
+            margin-top: 20px;
+        }
+
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            width: 200px;
+        }
+
+        table {
+            margin: 30px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #334155;
+        }
+
+        th {
+            background: #1e293b;
+        }
+    </style>
 </head>
+
 <body>
- 
 
-    <h1>Network Performance Monitor</h1>
+<h1>📡 Network Performance Monitor</h1>
 
-    <canvas id="myChart" width="800" height="400"></canvas>
+<div id="alertBox" style="display:none; background:red; padding:15px; margin:20px;">
+    🚨 High Latency Detected!
+</div>
 
-    <script>
-        const labels = [];
-        const pingData = [];
-        const downloadData = [];
-        const uploadData = [];
+<div id="health"></div>
 
-        const tableData = {{ data | tojson }};
+<div class="cards">
+    <div class="card">
+        <h3>Ping</h3>
+        <h2 id="pingVal">--</h2>
+    </div>
 
-        tableData.forEach(row => {
-            labels.push(row[0]);
-            pingData.push(parseFloat(row[1]) || 0);
-            downloadData.push(parseFloat(row[2]) || 0);
-            uploadData.push(parseFloat(row[3]) || 0);
-        });
+    <div class="card">
+        <h3>Download</h3>
+        <h2 id="downloadVal">--</h2>
+    </div>
 
-        const ctx = document.getElementById('myChart').getContext('2d');
+    <div class="card">
+        <h3>Upload</h3>
+        <h2 id="uploadVal">--</h2>
+    </div>
+</div>
 
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Ping (ms)',
-                        data: pingData,
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Download (Mbps)',
-                        data: downloadData,
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Upload (Mbps)',
-                        data: uploadData,
-                        borderWidth: 2
-                    }
-                ]
-            }
-        });
-    </script>
+<canvas id="myChart" width="800" height="400"></canvas>
 
-    <h2>Raw Data</h2>
+<!-- SAFE DATA PASS -->
+<script id="data-json" type="application/json">
+    {{ data | tojson }}
+</script>
 
-    <table border="1">
-        <tr>
-            <th>Time</th>
-            <th>Ping</th>
-            <th>Download</th>
-            <th>Upload</th>
-        </tr>
+<script>
 
-        {% for row in data %}
-        <tr>
-            <td>{{ row[0] }}</td>
-            <td>{{ row[1] }}</td>
-            <td>{{ row[2] }}</td>
-            <td>{{ row[3] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+const tableData = JSON.parse(
+    document.getElementById("data-json").textContent
+);
+
+console.log("DATA:", tableData);
+
+const labels = [];
+const pingData = [];
+const downloadData = [];
+const uploadData = [];
+
+tableData.forEach(row => {
+    labels.push(row[0]);
+    pingData.push(parseFloat(row[1]) || 0);
+    downloadData.push(parseFloat(row[2]) || 0);
+    uploadData.push(parseFloat(row[3]) || 0);
+});
+
+// Chart
+const ctx = document.getElementById('myChart').getContext('2d');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+            { label: 'Ping', data: pingData, borderColor: 'red' },
+            { label: 'Download', data: downloadData, borderColor: 'green' },
+            { label: 'Upload', data: uploadData, borderColor: 'blue' }
+        ]
+    }
+});
+
+// Run after page loads
+window.onload = function() {
+
+    if (!tableData || tableData.length === 0) {
+        console.log("No data available");
+        return;
+    }
+
+    const last = tableData[tableData.length - 1];
+
+    if (last && last.length >= 4) {
+        document.getElementById("pingVal").innerText = last[1] + " ms";
+        document.getElementById("downloadVal").innerText = last[2] + " Mbps";
+        document.getElementById("uploadVal").innerText = last[3] + " Mbps";
+
+        // Health function
+        function getHealth(ping) {
+            if (ping < 50) return "🟢 Good";
+            if (ping < 100) return "🟡 Moderate";
+            return "🔴 Poor";
+        }
+        const alertBox = document.getElementById("alertBox");
+
+if (ping > 100) {
+    alertBox.style.display = "block";
+} else {
+    alertBox.style.display = "none";
+}
+        const ping = parseFloat(last[1]);
+        const health = getHealth(ping);
+
+        document.getElementById("health").innerHTML = `<h2>${health}</h2>`;
+    }
+
+};
+
+</script>
+
+<h2>📊 Raw Data</h2>
+
+<table>
+    <tr>
+        <th>Time</th>
+        <th>Ping</th>
+        <th>Download</th>
+        <th>Upload</th>
+    </tr>
+
+    {% for row in data %}
+    <tr>
+        <td>{{ row[0] }}</td>
+        <td>{{ row[1] }}</td>
+        <td>{{ row[2] }}</td>
+        <td>{{ row[3] }}</td>
+    </tr>
+    {% endfor %}
+</table>
 
 </body>
 </html>
