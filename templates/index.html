@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Monitor</title>
+    <meta http-equiv="refresh" content="10">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+ 
+
+    <h1>Network Performance Monitor</h1>
+
+    <canvas id="myChart" width="800" height="400"></canvas>
+
+    <script>
+        const labels = [];
+        const pingData = [];
+        const downloadData = [];
+        const uploadData = [];
+
+        const tableData = {{ data | tojson }};
+
+        tableData.forEach(row => {
+            labels.push(row[0]);
+            pingData.push(parseFloat(row[1]) || 0);
+            downloadData.push(parseFloat(row[2]) || 0);
+            uploadData.push(parseFloat(row[3]) || 0);
+        });
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Ping (ms)',
+                        data: pingData,
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Download (Mbps)',
+                        data: downloadData,
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Upload (Mbps)',
+                        data: uploadData,
+                        borderWidth: 2
+                    }
+                ]
+            }
+        });
+    </script>
+
+    <h2>Raw Data</h2>
+
+    <table border="1">
+        <tr>
+            <th>Time</th>
+            <th>Ping</th>
+            <th>Download</th>
+            <th>Upload</th>
+        </tr>
+
+        {% for row in data %}
+        <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</body>
+</html>
