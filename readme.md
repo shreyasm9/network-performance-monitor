@@ -1,5 +1,9 @@
 # 📡 Network Performance Monitor
 
+## 🌐 Live Demo
+
+🔗 https://network-performance-monitor.onrender.com/
+
 A simple real-time network monitoring tool that tracks:
 
 - 📶 Ping (Latency)
