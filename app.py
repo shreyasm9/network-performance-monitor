@@ -1,12 +1,11 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import jsonify, Flask, render_template, request, redirect, session
 import csv
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-USERNAME = "admin"
-PASSWORD = "admin"
 
+# Read network data
 def read_data():
     data = []
     try:
@@ -18,33 +17,88 @@ def read_data():
         pass
     return data
 
+def read_alerts():
+    alerts = []
+    try:
+        with open("alerts.csv", "r") as f:
+            lines = f.readlines()
+
+        for line in lines[1:]:  # skip header
+            alerts.append(line.strip().split(","))
+    except:
+        pass
+
+    return alerts
+
+# 🔐 LOGIN ROUTE (UPDATED)
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user = request.form["username"]
-        pwd = request.form["password"]
+        username = request.form["username"]
+        password = request.form["password"]
 
-        if user == USERNAME and pwd == PASSWORD:
-            session["logged_in"] = True
-            return redirect("/dashboard")
-        else:
-            return "Invalid credentials"
+        try:
+            with open("users.csv", "r") as f:
+                users = f.readlines()
+
+            for user in users[1:]:  # skip header
+                u, p = user.strip().split(",")
+
+                if u == username and p == password:
+                    session["logged_in"] = True
+                    session["user"] = username
+                    return redirect("/dashboard")
+
+        except:
+            pass
+
+        return "Invalid credentials ❌"
 
     return render_template("login.html")
 
+
+# 📝 REGISTER ROUTE
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        with open("users.csv", "a") as f:
+            f.write(f"{username},{password}\n")
+
+        return redirect("/")
+
+    return render_template("register.html")
+
+@app.route("/data")
+def get_data():
+    data = read_data()
+    alerts = read_alerts()
+    return jsonify ({
+        "data": data,
+        "alerts": alerts
+    })
+
+# 📊 DASHBOARD
 @app.route("/dashboard")
 def dashboard():
     if not session.get("logged_in"):
         return redirect("/")
 
     data = read_data()
-    print("DEBUG DATA:", data)
-    return render_template("index.html", data=data)
+    alerts = read_alerts()
 
+    return render_template("index.html", data=data, alerts=alerts)
+
+
+# 🚪 LOGOUT
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
+
+# 🚀 RUN APP
 if __name__ == "__main__":
     app.run(debug=True)

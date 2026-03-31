@@ -177,5 +177,23 @@ if (ping > 100) {
     {% endfor %}
 </table>
 
+<h2>🚨 Alert History</h2>
+
+<table>
+    <tr>
+        <th>Time</th>
+        <th>Type</th>
+        <th>Value</th>
+    </tr>
+
+    {% for alert in alerts %}
+    <tr style="background:#7f1d1d; color:white;">
+        <td>{{ alert[0] }}</td>
+        <td>{{ alert[1] }}</td>
+        <td>{{ alert[2] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
 </body>
 </html>

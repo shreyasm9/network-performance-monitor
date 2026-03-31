@@ -1,15 +1,17 @@
-
 import speedtest
 from ping3 import ping
-import psutil
 import csv
 import time
 from datetime import datetime
 
+
+# 📡 Get Ping
 def get_ping():
     response = ping("8.8.8.8")
     return round(response * 1000, 2) if response else None  # ms
 
+
+# 🌐 Get Speed
 def get_speed():
     try:
         st = speedtest.Speedtest()
@@ -24,18 +26,32 @@ def get_speed():
         print("Speedtest failed:", e)
         return None, None
 
+
+# 🚨 Save Alerts
+def save_alert(alert_type, value):
+    with open("alerts.csv", "a") as f:
+        f.write(f"{datetime.now()},{alert_type},{value}\n")
+
+
+# 📝 Log Data
 def log_data():
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ping_val = get_ping()
-    download, upload = get_speed()
-
-    with open("data/network_log.csv", "a", newline="") as file:
+    with open("data/network_log.csv", "a") as file:
         writer = csv.writer(file)
-        writer.writerow([timestamp, ping_val, download, upload])
 
-    print(f"[{timestamp}] Ping: {ping_val} ms | Download: {download or 'N/A'} Mbps | Upload: {upload or 'N/A'} Mbps")
+        ping_val = get_ping()
+        download, upload = get_speed()
 
-if __name__ == "__main__":
-    while True:
-        log_data()
-        time.sleep(30)  # runs every 30 seconds
+        # Save normal log
+        writer.writerow([datetime.now(), ping_val, download, upload])
+
+        print(f"[{datetime.now()}] Ping: {ping_val} ms | Download: {download} Mbps | Upload: {upload} Mbps")
+
+        # 🚨 ALERT CONDITION
+        if ping_val and ping_val > 100:
+            save_alert("HIGH LATENCY", f"{ping_val} ms")
+
+
+# 🔁 Run continuously
+while True:
+    log_data()
+    time.sleep(30)  # every 30 seconds
